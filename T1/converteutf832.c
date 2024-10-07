@@ -1,10 +1,7 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include "converteutf832.h"
 
-int convUtf8p32(FILE* arquivo_entrada, FILE* arquivo_saida);
 int verificaTamanhoCaractereUTF8(int codigoDoCaractere);
-int* geraVetorDeBytes(int qtdBytes);
 int preencheVetorDeBytes(int* bytes, int qtdBytes, int cInicial, FILE* arquivo);
 int escreveCaractereUtf32(int* bytes, int qtdBytes, FILE* arquivo);
 int escreveBom(FILE* arquivo_saida);
@@ -25,8 +22,8 @@ int convUtf8p32(FILE* arquivo_entrada, FILE* arquivo_saida) {
         if (cInicial == EOF) break;
 
         int qtdBytesCaractere = verificaTamanhoCaractereUTF8(cInicial);
-        int* bytes = geraVetorDeBytes(qtdBytesCaractere);
-
+        int* bytes = (int*)malloc(sizeof(int) * qtdBytesCaractere);
+        
         if (!bytes) {
             fprintf(stderr, "Erro na alocação de memória\n");
             return -1;
@@ -132,9 +129,6 @@ int preencheVetorDeBytes(int* bytes, int qtdBytes, int cInicial, FILE* arquivo_e
     return 1;
 }
 
-int* geraVetorDeBytes(int qtdBytes) {
-    return (int*)malloc(sizeof(int) * qtdBytes);
-}
 
 int eLittleEndian(unsigned char* bom) {
     if(bom[0] == 0x00 && bom[1] == 0x00 && bom[2] == 0xFE && bom[3] == 0xFF) return 0;
