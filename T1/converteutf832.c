@@ -1,3 +1,6 @@
+/* Julia Gomes Zibordi 2320934 3WA */
+/* Marcos Paulo Marinho Vieira 2320466 3WA*/
+
 #include <stdlib.h>
 #include "converteutf832.h"
 
@@ -33,7 +36,7 @@ int convUtf8p32(FILE* arquivo_entrada, FILE* arquivo_saida) {
             return -1;
         }
 
-        // O vetor utf8Bytes guarda cada byte do caractere UTF-8 lido
+        // O vetor utf8Bytes guarda cada byte do caractere UTF-8 lido e possui a quantidade correta de bytes para armazenar o caractere UTF-8
 
         unsigned char* utf8Bytes = (unsigned char*)malloc(sizeof(int) * qtdBytesCaractere);
         
