@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include "converteutf832.h"
 
-int verificaTamanhoCaractereUtf8(int charInicial);
-int preencheVetorDeBytes(unsigned char* utf8Bytes, int qtdBytes, int charInicial, FILE* arquivo_entrada);
+int verificaTamanhoCaractereUtf8(int byteInicial);
+int preencheVetorDeBytes(unsigned char* utf8Bytes, int qtdBytes, int byteInicial, FILE* arquivo_entrada);
 int escreveCaractereUtf32(unsigned char* utf8Bytes, int qtdBytes, FILE* arquivo_saida);
 int escreveBom(FILE* arquivo_saida);
 int verificaLittleEndian(unsigned char* bom);
@@ -16,15 +16,17 @@ int convUtf8p32(FILE* arquivo_entrada, FILE* arquivo_saida) {
         return -1;
     }
 
-    int charInicial = 0;
+    // byteInicial é definido como inteiro, pois a função fgetc retorna um inteiro e deve ser possível representar EOF (-1) 
+
+    int byteInicial = 0;
 
     // Lê um caractere UTF-8 do arquivo de entrada por vez e escreve seu correspondente em UTF-32 no arquivo de saída
 
     while (1) {
-        charInicial = fgetc(arquivo_entrada);
-        if (charInicial == EOF) break;
+        byteInicial = fgetc(arquivo_entrada);
+        if (byteInicial == EOF) break;
 
-        int qtdBytesCaractere = verificaTamanhoCaractereUtf8(charInicial);
+        int qtdBytesCaractere = verificaTamanhoCaractereUtf8(byteInicial);
 
         if(!qtdBytesCaractere) {
             fprintf(stderr, "Caractere UTF-8 inválido.\n");
@@ -40,7 +42,7 @@ int convUtf8p32(FILE* arquivo_entrada, FILE* arquivo_saida) {
             return -1;
         }
 
-        int leitura = preencheVetorDeBytes(utf8Bytes, qtdBytesCaractere, charInicial, arquivo_entrada);
+        int leitura = preencheVetorDeBytes(utf8Bytes, qtdBytesCaractere, byteInicial, arquivo_entrada);
         if (!leitura) {
             fprintf(stderr, "Erro na leitura do arquivo UTF-8\n");
             free(utf8Bytes);  
@@ -86,7 +88,7 @@ int convUtf32p8(FILE* arquivo_entrada, FILE* arquivo_saida) {
             }
         }
         
-        // Considera a ordem dos bytes (little ou big-endian) para obter o código Unicode correto.
+        // Considera a ordem dos bytes (little ou big-endian) para obter o código Unicode correto
 
         unsigned int codigoUnicode = obtemCodigoUnicode(utf32Bytes, eLittleEndian);
 
@@ -134,27 +136,29 @@ int escreveCaractereUtf32(unsigned char* utf8Bytes, int qtdBytes, FILE* arquivo_
     return 1;
 }
 
-int verificaTamanhoCaractereUtf8(int charInicial) {
+// Verifica a quantidade de bytes usados para o caractere UTF-8 lido baseado no seu primeiro byte
 
-    if (charInicial < 0x80) {
+int verificaTamanhoCaractereUtf8(int byteInicial) {
+
+    if (byteInicial < 0x80) {
         return 1;
-    } else if ((charInicial & 0xE0) == 0xC0) {
+    } else if ((byteInicial & 0xE0) == 0xC0) {
         return 2;
-    } else if ((charInicial & 0xF0) == 0xE0) {
+    } else if ((byteInicial & 0xF0) == 0xE0) {
         return 3;
-    } else if ((charInicial & 0xF8) == 0xF0) {
+    } else if ((byteInicial & 0xF8) == 0xF0) {
         return 4;
     }
     return 0;
 }
 
-int preencheVetorDeBytes(unsigned char* utf8Bytes, int qtdBytes, int charInicial, FILE* arquivo_entrada) {
-    utf8Bytes[0] = charInicial;
+int preencheVetorDeBytes(unsigned char* utf8Bytes, int qtdBytes, int byteInicial, FILE* arquivo_entrada) {
+    utf8Bytes[0] = (unsigned char) byteInicial;
     for (int i = 1; i < qtdBytes; i++) {
-        int charTemp = fgetc(arquivo_entrada);
-        if (charTemp == EOF) return 0;
+        int byteTemp = fgetc(arquivo_entrada);
+        if (byteTemp == EOF) return 0;
 
-        utf8Bytes[i] = charTemp;
+        utf8Bytes[i] = (unsigned char) byteTemp;
     }
     return 1;
 }
@@ -165,6 +169,8 @@ int verificaLittleEndian(unsigned char* bom) {
     else if(bom[0] == 0xFF && bom[1] == 0xFE && bom[2] == 0x00 && bom[3] == 0x00) return 1;
     else return -1; 
 }
+
+// Combina os bytes dos caracteres corretamente de acordo com a ordem em que foram gravados
 
 unsigned int obtemCodigoUnicode(unsigned char* utf32Bytes, int elittleEndian) {
     if(!elittleEndian) return (unsigned int) utf32Bytes[0] << 24 | utf32Bytes[1] << 16 | utf32Bytes[2] << 8 | utf32Bytes[3];
@@ -186,10 +192,20 @@ int escreveCaractereUtf8(unsigned int codigoUnicode, int qtdBytes, FILE* arquivo
     unsigned char utf8Bytes[4];
     if (qtdBytes == 1) utf8Bytes[0] = (unsigned char) codigoUnicode;
     else {
+
         for(int i = qtdBytes-1; i > 0; i--){
+
+            // Adiciona o prefixo 10 seguido dos 6 bits menos significativos 
+
             utf8Bytes[i] = 0x80 | (codigoUnicode & 0x3f);
+
+            // "Remove" 6 bits que já foram processados
+
             codigoUnicode >>= 6;
         }
+
+        // 0xff << (8 - qtdBytes) resulta no prefixo que indica a quantidade de bytes
+
         utf8Bytes[0] = (unsigned char)((0xff << (8 - qtdBytes)) | codigoUnicode);
     }
     if (fwrite(utf8Bytes, sizeof(unsigned char), qtdBytes, arquivo_saida) < qtdBytes) return 0;
