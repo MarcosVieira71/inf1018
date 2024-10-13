@@ -2,6 +2,7 @@
 /* Marcos Paulo Marinho Vieira 2320466 3WA*/
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "converteutf832.h"
 
 int verificaTamanhoCaractereUtf8(int byteInicial);
@@ -38,7 +39,7 @@ int convUtf8p32(FILE* arquivo_entrada, FILE* arquivo_saida) {
 
         // O vetor utf8Bytes guarda cada byte do caractere UTF-8 lido e possui a quantidade correta de bytes para armazenar o caractere UTF-8
 
-        unsigned char* utf8Bytes = (unsigned char*)malloc(sizeof(int) * qtdBytesCaractere);
+        unsigned char* utf8Bytes = (unsigned char*)malloc(sizeof(unsigned char) * qtdBytesCaractere);
         
         if (!utf8Bytes) {
             fprintf(stderr, "Erro na alocação de memória\n");

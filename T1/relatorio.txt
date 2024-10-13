@@ -1,0 +1,6 @@
+Julia Gomes Zibordi 2320934 3WA
+Marcos Paulo Marinho Vieira 2320466 3WA
+
+As funções convUtf8p32 e convUtf32p8 e todas as demais funções auxiliares estão funcionando. Foram realizados testes com os arquivos fornecidos pelo enunciado do trabalho, além de dois arquivos em UTF-32 (little-endian e big-endian) e um em UTF-8. Não foram apresentados problemas durante os testes. 
+
+O arquivo C enviado possui, no topo, o protótipo de todas as funções auxiliares utilizadas, além de eventuais comentários para facilitar a compreensão do código.
