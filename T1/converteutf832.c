@@ -68,8 +68,11 @@ int convUtf8p32(FILE* arquivo_entrada, FILE* arquivo_saida) {
 int convUtf32p8(FILE* arquivo_entrada, FILE* arquivo_saida) {
     unsigned char bom[4];
 
-    fread(bom, sizeof(unsigned char), 4, arquivo_entrada);
-
+    if(fread(bom, sizeof(unsigned char), 4, arquivo_entrada) < 4) {
+        fprintf(stderr, "BOM inválido ou arquivo incompleto\n");
+        return -1;
+    }
+    
     int eLittleEndian = verificaLittleEndian(bom);
 
     if(eLittleEndian == -1) {
