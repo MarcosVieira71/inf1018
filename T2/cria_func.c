@@ -3,20 +3,20 @@
 #include <stdlib.h>
 #include "cria_func.h"
 
-int instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo);
-int instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo);
+void instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo);
+void instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo);
 void cria_func(void* f, DescParam params[], int n, unsigned char *codigo);
+void guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo);
 
-int instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo){
+void instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0x55;    //pushq %rbp
     codigo[(*idxCodigo)++] = 0x48;    //movq %rsp, %rbp
     codigo[(*idxCodigo)++] = 0x89; 
     codigo[(*idxCodigo)++] = 0xe5; 
     printf("idxCodigo %d\n", *idxCodigo);
-    return 0;
 }
 
-int instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo){
+void instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0x48; 
     codigo[(*idxCodigo)++] = 0xb8;
     
@@ -34,11 +34,9 @@ int instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0xc9; //leave
     codigo[(*idxCodigo)++] = 0xc3; //ret
     printf("idxCodigo %d\n", *idxCodigo);
-
-    return 0;
 }
 
-int guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo){
+void guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo){
     //subq $32, %rsp
     codigo[(*idxCodigo)++] = 0x48;
     codigo[(*idxCodigo)++] = 0x83;
@@ -63,27 +61,27 @@ int guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0x89;
     codigo[(*idxCodigo)++] = 0x55;
     codigo[(*idxCodigo)++] = 0xe8;    
-    return 0;
 }
 
-int passaInformacoesParaArgumentos(unsigned char* codigo, int* idxCodigo, unsigned int posPilha) {
-    codigo[(*idxCodigo)++] = 0x48;    
+void passaInformacoesParaArgumentos(unsigned char* codigo, int* idxCodigo, unsigned int posPilha, int iFor, int ehInteiro) {
+    if(!ehInteiro){
+        codigo[(*idxCodigo)++] = 0x48;    
+    }
     codigo[(*idxCodigo)++] = 0x8b;    
 
-    if (posPilha == 24) {
-        codigo[(*idxCodigo)++] = 0x7d; 
-        codigo[(*idxCodigo)++] = 0xe8; 
-    } else if (posPilha == 16) {
-        codigo[(*idxCodigo)++] = 0x75; 
-        codigo[(*idxCodigo)++] = 0xf0; 
-    } else if (posPilha == 8) {
-        codigo[(*idxCodigo)++] = 0x55; 
-        codigo[(*idxCodigo)++] = 0xf8; 
-    } else {
+    unsigned char registradores[] = {0x7d, 0x75, 0x55};
+    codigo[(*idxCodigo)++] = registradores[iFor]; 
+    
+    int posIdx = posPilha/8 - 1; 
+
+    if(posIdx > 2 || posIdx < 0){
         printf("Erro: posição de pilha inválida (%u)\n", posPilha);
         exit(1);
     }
-    return 0;
+
+    unsigned char posicaoRbp[] = {0xf8, 0xf0, 0xe8};
+    codigo[(*idxCodigo)++] = posicaoRbp[posIdx]; 
+
 }
 
 
@@ -96,6 +94,7 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
 
     int idxCodigo = 0;
 
+    int numParams = 0;
     
     instrucoesIniciaisDaPilha(codigo, &idxCodigo);
     guardarInformacoesPilha(codigo, &idxCodigo);
@@ -106,8 +105,14 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
 
     for (int i = 0; i < n; i++) {
         if (params[i].orig_val == PARAM) {
-            passaInformacoesParaArgumentos(codigo, &idxCodigo, endPilha[i]);
-        } else if (params[i].orig_val == FIX) {
+            int ehInteiro;
+            if(params[i].tipo_val == INT_PAR) ehInteiro = 1;
+            else ehInteiro = 0;
+            passaInformacoesParaArgumentos(codigo, &idxCodigo, endPilha[numParams], i, ehInteiro);
+            numParams++;
+        }
+
+        else if (params[i].orig_val == FIX) {
             if (params[i].tipo_val == INT_PAR) {
                 
                 codigo[idxCodigo++] = registradores_int[i]; 
@@ -126,7 +131,9 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
                     valorFixo >>= 8;
                 }
             }
-        } else if (params[i].orig_val == IND) {
+        } 
+        
+        else if (params[i].orig_val == IND) {
             
             codigo[idxCodigo++] = 0x48; 
             codigo[idxCodigo++] = 0xbb;

@@ -1,0 +1,109 @@
+#include <stdio.h>
+#include <stdint.h>
+#include "cria_func.h"
+
+void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
+    
+    if (n < 1 || n > 3) {
+        fprintf(stderr, "Foram recebidos %d parametros. Apenas sao aceitos entre 1 a 3 parametros!\n", n);
+    return;
+    }
+    
+    int deslocamento = 0;
+
+
+    // Configura o quadro de pilha
+    codigo[deslocamento++] = 0x55;                          // push %rbp
+    codigo[deslocamento++] = 0x48; codigo[deslocamento++] = 0x89; // mov %rsp, %rbp
+    codigo[deslocamento++] = 0xe5;
+
+    // Ordem dos registradores para parâmetros
+    const int ordemRegistradores[] = { 7, 6, 2, 1, 8, 9 };
+
+    // Conta o número de parâmetros recebidos pela função gerada
+    int totalParametrosFuncaoGerada = 0;
+    for (int i = 0; i < n; i++) {
+        if (params[i].orig_val == PARAM) {
+            totalParametrosFuncaoGerada++;
+        }
+    }
+    int indiceParametroFuncaoGerada = totalParametrosFuncaoGerada;
+
+    // Processa parâmetros em ordem reversa
+    for (int i = n - 1; i >= 0; i--) {
+        int registradorDestino = ordemRegistradores[i];
+
+        if (params[i].orig_val == PARAM) {
+            indiceParametroFuncaoGerada--;
+            int registradorOrigem = ordemRegistradores[indiceParametroFuncaoGerada];
+            if (registradorDestino != registradorOrigem) {
+                unsigned char rex = 0x48;
+                if (registradorDestino >= 8 || registradorOrigem >= 8) {
+                    rex = rex + 0x01;
+                    if (registradorOrigem >= 8) 
+                    {
+                        rex = rex + 0x04;
+                    }
+                    if (registradorDestino >= 8) registradorDestino -= 8;
+                    if (registradorOrigem >= 8) registradorOrigem -= 8;
+                }
+                codigo[deslocamento++] = rex;
+                codigo[deslocamento++] = 0x89; // MOV r/m64, r64
+                unsigned char modrm = 0xC0 | (registradorOrigem << 3) | registradorDestino;
+                codigo[deslocamento++] = modrm;
+            }
+        } else if (params[i].orig_val == FIX) {
+            // Define o valor fixo para registradorDestino
+            unsigned char rex = 0x48;
+            unsigned char opcode;
+            if (registradorDestino >= 8) {
+                rex = rex + 0x01;
+                registradorDestino -= 8;
+            }
+            opcode = 0xB8 + registradorDestino;
+            codigo[deslocamento++] = rex;
+            codigo[deslocamento++] = opcode;
+            if (params[i].tipo_val == INT_PAR) {
+                *((int*)(&codigo[deslocamento])) = (int)params[i].valor.v_int;
+            } else {
+                *((long*)(&codigo[deslocamento])) = (long)params[i].valor.v_ptr;
+            }
+            deslocamento += 8;
+        } else if (params[i].orig_val == IND) {
+            // Carrega o valor do endereço de memória apontado por valor.v_ptr
+            unsigned char rex = 0x48;
+            unsigned char opcode = 0x8B;
+            if (registradorDestino >= 8) {
+                rex = rex + 0x01;
+                registradorDestino -= 8;
+            }
+            codigo[deslocamento++] = rex;
+            codigo[deslocamento++] = opcode;
+            unsigned char modrm = 0x05 | (registradorDestino << 3);
+            codigo[deslocamento++] = modrm;
+            long endereco = (long)params[i].valor.v_ptr;
+            long posicaoRip = (long)(codigo + deslocamento + 4);
+            *((int*)(&codigo[deslocamento])) = (int)(endereco - posicaoRip);
+            deslocamento += 4;
+        }
+    }
+
+    // Move o ponteiro da função para o registrador %r10
+    codigo[deslocamento++] = 0x49;
+    codigo[deslocamento++] = 0xBA;
+    *((long*)(&codigo[deslocamento])) = (long)f;
+    deslocamento += 8;
+
+    // Zera o registrador %eax
+    codigo[deslocamento++] = 0x31;
+    codigo[deslocamento++] = 0xC0;
+
+    // Chama a função *%r10
+    codigo[deslocamento++] = 0x41;
+    codigo[deslocamento++] = 0xFF;
+    codigo[deslocamento++] = 0xD2;
+
+    // Restaura o quadro de pilha
+    codigo[deslocamento++] = 0x5D;       // pop %rbp
+    codigo[deslocamento++] = 0xC3;       // ret
+}
