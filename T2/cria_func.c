@@ -1,3 +1,6 @@
+/* Julia Gomes Zibordi 2320934 3WA */
+/* Marcos Paulo Marinho Vieira 2320466 3WA */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -5,7 +8,7 @@
 
 void instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo);
 void instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo);
-void cria_func(void* f, DescParam params[], int n, unsigned char *codigo);
+void passaInformacoesParaArgumentos(unsigned char* codigo, int* idxCodigo, unsigned int posPilha, int iFor, int ehInteiro);
 void guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo);
 
 void instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo){
@@ -84,7 +87,7 @@ void passaInformacoesParaArgumentos(unsigned char* codigo, int* idxCodigo, unsig
 
 
 
-void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
+void cria_func(void* f, DescParam params[], int n, unsigned char codigo[]) {
     if (n < 1 || n > 3) {
         printf("Erro: o número de parâmetros deve ser entre 1 e 3\n");
         exit(1);
@@ -92,9 +95,12 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
 
     int idxCodigo = 0;
 
+    // Guardamos a quantidade de valores passados de origem PARAM para saber para qual registrador mover 
     int numParams = 0;
     
     instrucoesIniciaisDaPilha(codigo, &idxCodigo);
+
+    // Salvamos todos os argumentos na pilha para o caso de serem sobrescritos
     guardarInformacoesPilha(codigo, &idxCodigo);
 
     unsigned int endPilha[] = {8, 16, 24};                  
@@ -139,9 +145,7 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
                 codigo[idxCodigo++] = endereco & 0xFF;
                 endereco >>= 8;
             }
-            if(params[i].tipo_val == PTR_PAR){
-                codigo[idxCodigo++] = 0x48; 
-            }
+            codigo[idxCodigo++] = 0x48; 
             codigo[idxCodigo++] = 0x8b;
             codigo[idxCodigo++] = registradores[i];
         }

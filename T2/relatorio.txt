@@ -1,0 +1,16 @@
+Julia Gomes Zibordi 2320934 3WA
+Marcos Paulo Marinho Vieira 2320466 3WA
+
+A função cria_func e todas as demais funções auxiliares estão funcionando. Foram realizados testes com os códigos fornecidos pelo enunciado do trabalho, além de alguns testes adicionais, que estão descritos abaixo: 
+
+1. Soma de dois parâmetros variáveis e um fixo: A função criada deve somar três valores: os dois primeiros são passados como parâmetros e o terceiro é fixo. O código gerado dinamicamente deve realizar a soma desses três valores. 
+
+2. Subtração entre um parâmetro fixo e um variável: A função gerada deve calcular a subtração de dois números. O primeiro valor é fixo, amarrado a uma variável, e o segundo valor é passado como parâmetro.  
+
+3. Fatorial de um parâmetro fixo: A nova função deve calcular o fatorial de um número fixo.  
+
+4. Concatenação de uma string fixa e uma variável: A função gerada deve concatenar uma string fixa com uma string passada como parâmetro.
+
+Não foram apresentados problemas em nenhum dos testes.
+
+O arquivo C enviado possui, no topo, o protótipo de todas as funções auxiliares utilizadas, além de eventuais comentários para facilitar a compreensão do código.
