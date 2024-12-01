@@ -1,25 +1,22 @@
-/* Julia Gomes Zibordi 2320934 3WA */
-/* Marcos Paulo Marinho Vieira 2320466 3WA */
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include "cria_func.h"
 
-int instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo);
-int instrucoesIniciasDaPilha(unsigned char* codigo, int* idxCodigo);
+void instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo);
+void instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo);
 void cria_func(void* f, DescParam params[], int n, unsigned char *codigo);
+void guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo);
 
-int instrucoesIniciasDaPilha(unsigned char* codigo, int* idxCodigo){
+void instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0x55;    //pushq %rbp
     codigo[(*idxCodigo)++] = 0x48;    //movq %rsp, %rbp
     codigo[(*idxCodigo)++] = 0x89; 
     codigo[(*idxCodigo)++] = 0xe5; 
     printf("idxCodigo %d\n", *idxCodigo);
-    return 0;
 }
 
-int instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo){
+void instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0x48; 
     codigo[(*idxCodigo)++] = 0xb8;
     
@@ -37,12 +34,10 @@ int instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0xc9; //leave
     codigo[(*idxCodigo)++] = 0xc3; //ret
     printf("idxCodigo %d\n", *idxCodigo);
-
-    return 0;
 }
 
-int guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo){
-    //subq $-32, %rsp
+void guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo){
+    //subq $32, %rsp
     codigo[(*idxCodigo)++] = 0x48;
     codigo[(*idxCodigo)++] = 0x83;
     codigo[(*idxCodigo)++] = 0xec;
@@ -66,105 +61,90 @@ int guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0x89;
     codigo[(*idxCodigo)++] = 0x55;
     codigo[(*idxCodigo)++] = 0xe8;    
-    return 0;
 }
 
-int passaInformacoesParaArgumentos(unsigned char* codigo, int* idxCodigo, unsigned char registrador, unsigned posPilha){
-    codigo[(*idxCodigo)++] = 0x48;
-    codigo[(*idxCodigo)++] = 0x8b;
-    if(posPilha == 24){
-        codigo[(*idxCodigo)++] = 0x7d;
-        codigo[(*idxCodigo)++] = 0xe8; 
+void passaInformacoesParaArgumentos(unsigned char* codigo, int* idxCodigo, unsigned int posPilha, int iFor, int ehInteiro) {
+    if(!ehInteiro){
+        codigo[(*idxCodigo)++] = 0x48;    
     }
-    else if(posPilha == 16){
+    codigo[(*idxCodigo)++] = 0x8b;    
 
-        codigo[(*idxCodigo)++] = 0x75;
-        codigo[(*idxCodigo)++] = 0xe8; 
-    }
-    else if(posPilha == 8){
+    unsigned char registradores[] = {0x7d, 0x75, 0x55};
+    codigo[(*idxCodigo)++] = registradores[iFor]; 
+    
+    int posIdx = posPilha/8 - 1; 
 
-        codigo[(*idxCodigo)++] = 0x55;
-        codigo[(*idxCodigo)++] = 0xf8; 
+    if(posIdx > 2 || posIdx < 0){
+        printf("Erro: posição de pilha inválida (%u)\n", posPilha);
+        exit(1);
     }
-    return 0;
+
+    unsigned char posicaoRbp[] = {0xf8, 0xf0, 0xe8};
+    codigo[(*idxCodigo)++] = posicaoRbp[posIdx]; 
+
 }
+
 
 
 void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
     if (n < 1 || n > 3) {
-        printf("O valor de parâmetros deve ser entre 1 e 3\n");
+        printf("Erro: o número de parâmetros deve ser entre 1 e 3\n");
         exit(1);
     }
-    int idxCodigo = 0;
-    int instrucoesIniciais = instrucoesIniciasDaPilha(codigo, &idxCodigo);
-    for(int i = 0; i < n; i++){
-        if(params[i].tipo_val == INT_PAR){
-            if(params[i].orig_val == PARAM){
-                unsigned char registradores[] = {};
-                unsigned char endPilha[] = {}; 
 
-            }
-            else if (params[i].orig_val == FIX){
-                unsigned char registradores[] = {0xbf, 0xbe, 0xba};
-                codigo[idxCodigo++] = registradores[i];
-                int inteiroFixo = params[i].valor.v_int;
-                for (int i = 0; i < sizeof(int); i++) {
-                    unsigned char byteAtual = inteiroFixo & 0xFF;
-                    codigo[idxCodigo++] = byteAtual;                 
-                    inteiroFixo >>= 8;                           
+    int idxCodigo = 0;
+
+    int numParams = 0;
+    
+    instrucoesIniciaisDaPilha(codigo, &idxCodigo);
+    guardarInformacoesPilha(codigo, &idxCodigo);
+
+    unsigned int endPilha[] = {8, 16, 24};                  
+
+    for (int i = 0; i < n; i++) {
+        if (params[i].orig_val == PARAM) {
+            int ehInteiro;
+            if(params[i].tipo_val == INT_PAR) ehInteiro = 1;
+            else ehInteiro = 0;
+            passaInformacoesParaArgumentos(codigo, &idxCodigo, endPilha[numParams], i, ehInteiro);
+            numParams++;
+        }
+
+        else if (params[i].orig_val == FIX) {
+            unsigned char registradores[] = {0xbf, 0xbe, 0xba};
+            if (params[i].tipo_val == INT_PAR) {
+                
+                codigo[idxCodigo++] = registradores[i]; 
+                int valorFixo = params[i].valor.v_int;
+                for (int j = 0; j < sizeof(int); j++) {
+                    codigo[idxCodigo++] = valorFixo & 0xFF;
+                    valorFixo >>= 8;
                 }
-            }
-            else{
-                unsigned char registradores[] = {0x3b, 0x33, 0x13};
-                codigo[idxCodigo++] = 0x48;
-                codigo[idxCodigo++] = 0xbb;
-                long int valorIntPonteiroInd = (long int) params[i].valor.v_ptr;
-                for (int i = 0; i < sizeof(int*); i++) {
-                    unsigned char byteAtual = valorIntPonteiroInd & 0xFF;
-                    codigo[idxCodigo++] = byteAtual;    
-                    valorIntPonteiroInd >>= 8;                           
-                }                
-                codigo[idxCodigo++] = 0x8b;
-                codigo[idxCodigo++] = registradores[i];
+            } else if (params[i].tipo_val == PTR_PAR) {
+                
+                codigo[idxCodigo++] = 0x48;               
+                codigo[idxCodigo++] = registradores[i]; 
+                long int valorFixo = (long int)params[i].valor.v_ptr;
+                for (int j = 0; j < sizeof(long int); j++) {
+                    codigo[idxCodigo++] = valorFixo & 0xFF;
+                    valorFixo >>= 8;
+                }
             }
         } 
-        else if(params[i].tipo_val == PTR_PAR){
-            if(params[i].orig_val == PARAM){
-
-
+        
+        else if (params[i].orig_val == IND) {
+            unsigned char registradores[] = {0x3b, 0x33, 0x13};
+            codigo[idxCodigo++] = 0x48; 
+            codigo[idxCodigo++] = 0xbb;
+            long int endereco = (long int)params[i].valor.v_ptr;
+            for (int j = 0; j < 8; j++) {
+                codigo[idxCodigo++] = endereco & 0xFF;
+                endereco >>= 8;
             }
-            else if (params[i].orig_val == FIX){
-                unsigned char registradores[] = {0xbf, 0xbe, 0xba};
-                codigo[idxCodigo++] = 0x48;
-                codigo[idxCodigo++] = registradores[i];
-                long int valorPonteiroFixo = (long int) params[i].valor.v_ptr;
-                for (int i = 0; i < sizeof(int*); i++) {
-                    unsigned char byteAtual = valorPonteiroFixo & 0xFF;
-                    codigo[idxCodigo++] = byteAtual;                 
-                    valorPonteiroFixo >>= 8;                           
-                }
-            }
-            else{
-                unsigned char registradores[] = {0x3b, 0x33, 0x13};
-                codigo[idxCodigo++] = 0x48;
-                codigo[idxCodigo++] = 0xbb;
-                long int valorPonteiroInd = (long int) params[i].valor.v_ptr;
-                for (int i = 0; i < sizeof(int*); i++) {
-                    unsigned char byteAtual = valorPonteiroInd & 0xFF;
-                    codigo[idxCodigo++] = byteAtual;                 
-                    valorPonteiroInd >>= 8;                           
-                }                
-                codigo[idxCodigo++] = 0x48;
-                codigo[idxCodigo++] = 0x8b;
-                codigo[idxCodigo++] = registradores[i];
-            }
+            codigo[idxCodigo++] = 0x48; 
+            codigo[idxCodigo++] = 0x8b;
+            codigo[idxCodigo++] = registradores[i];
         }
-    }
-
-    int instrucoesFinais = instrucoesFinaisDaPilha(f, codigo, &idxCodigo);
-    if(instrucoesIniciais || instrucoesFinais) exit(1);
-    for(int i = 0; i < idxCodigo; i++){
-        printf("%hhx\n", codigo[i]);
-    }
+    }    
+    instrucoesFinaisDaPilha(f, codigo, &idxCodigo);
 }
-
