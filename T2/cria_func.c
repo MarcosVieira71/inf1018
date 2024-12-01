@@ -99,8 +99,6 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
     instrucoesIniciaisDaPilha(codigo, &idxCodigo);
     guardarInformacoesPilha(codigo, &idxCodigo);
 
-    unsigned char registradores_int[] = {0xbf, 0xbe, 0xba};
-    unsigned char registradores_ptr[] = {0x3f, 0x36, 0x32}; 
     unsigned int endPilha[] = {8, 16, 24};                  
 
     for (int i = 0; i < n; i++) {
@@ -113,9 +111,10 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
         }
 
         else if (params[i].orig_val == FIX) {
+            unsigned char registradores[] = {0xbf, 0xbe, 0xba};
             if (params[i].tipo_val == INT_PAR) {
                 
-                codigo[idxCodigo++] = registradores_int[i]; 
+                codigo[idxCodigo++] = registradores[i]; 
                 int valorFixo = params[i].valor.v_int;
                 for (int j = 0; j < sizeof(int); j++) {
                     codigo[idxCodigo++] = valorFixo & 0xFF;
@@ -124,7 +123,7 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
             } else if (params[i].tipo_val == PTR_PAR) {
                 
                 codigo[idxCodigo++] = 0x48;               
-                codigo[idxCodigo++] = registradores_ptr[i]; 
+                codigo[idxCodigo++] = registradores[i]; 
                 long int valorFixo = (long int)params[i].valor.v_ptr;
                 for (int j = 0; j < sizeof(long int); j++) {
                     codigo[idxCodigo++] = valorFixo & 0xFF;
@@ -134,7 +133,7 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
         } 
         
         else if (params[i].orig_val == IND) {
-            
+            unsigned char registradores[] = {0x3b, 0x33, 0x13};
             codigo[idxCodigo++] = 0x48; 
             codigo[idxCodigo++] = 0xbb;
             long int endereco = (long int)params[i].valor.v_ptr;
@@ -144,15 +143,8 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
             }
             codigo[idxCodigo++] = 0x48; 
             codigo[idxCodigo++] = 0x8b;
-            codigo[idxCodigo++] = registradores_ptr[i];
+            codigo[idxCodigo++] = registradores[i];
         }
-    }
-
-    
+    }    
     instrucoesFinaisDaPilha(f, codigo, &idxCodigo);
-
-    
-    for(int i = 0; i < idxCodigo; i++){
-        printf("%hhx\n", codigo[i]);
-    }
 }
