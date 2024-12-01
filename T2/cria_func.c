@@ -13,7 +13,6 @@ void instrucoesIniciaisDaPilha(unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0x48;    //movq %rsp, %rbp
     codigo[(*idxCodigo)++] = 0x89; 
     codigo[(*idxCodigo)++] = 0xe5; 
-    printf("idxCodigo %d\n", *idxCodigo);
 }
 
 void instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo){
@@ -33,7 +32,6 @@ void instrucoesFinaisDaPilha(void *f, unsigned char* codigo, int* idxCodigo){
     codigo[(*idxCodigo)++] = 0xd0; //call %rax
     codigo[(*idxCodigo)++] = 0xc9; //leave
     codigo[(*idxCodigo)++] = 0xc3; //ret
-    printf("idxCodigo %d\n", *idxCodigo);
 }
 
 void guardarInformacoesPilha(unsigned char* codigo, int* idxCodigo){
@@ -141,7 +139,9 @@ void cria_func(void* f, DescParam params[], int n, unsigned char *codigo) {
                 codigo[idxCodigo++] = endereco & 0xFF;
                 endereco >>= 8;
             }
-            codigo[idxCodigo++] = 0x48; 
+            if(params[i].tipo_val == PTR_PAR){
+                codigo[idxCodigo++] = 0x48; 
+            }
             codigo[idxCodigo++] = 0x8b;
             codigo[idxCodigo++] = registradores[i];
         }
