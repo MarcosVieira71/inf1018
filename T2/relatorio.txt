@@ -7,7 +7,7 @@ A função cria_func e todas as demais funções auxiliares estão funcionando. 
 
 2. Subtração entre um parâmetro fixo e um variável: A função gerada deve calcular a subtração de dois números. O primeiro valor é fixo, amarrado a uma variável, e o segundo valor é passado como parâmetro.  
 
-3. Fatorial de um parâmetro fixo: A nova função deve calcular o fatorial de um número fixo.  
+3. Fatorial de um parâmetro fixo: A função gerada deve calcular o fatorial de um número fixo.  
 
 4. Concatenação de uma string fixa e uma variável: A função gerada deve concatenar uma string fixa com uma string passada como parâmetro.
 
